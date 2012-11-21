@@ -4,7 +4,7 @@ import requests
 from pyquery import PyQuery
 import sys
 
-if len(sys.argv) < 2:
+if len(sys.argv) < 4:
 	print "Usage: %s <hostname> <username> <password>" % (sys.argv[0],)
 	raise SystemExit
 
