@@ -1,0 +1,153 @@
+#!/bin/sh
+# Graph bandwidth usage and line speed of ZyXEL P-2812HNU modems.
+#
+# For Licensing, see LICENSE file.
+# 
+#==============================================================
+# Usage: make symlinks to specific interfaces you want to graph
+# Example: zyxel_br0 -> /usr/local/munin/plugins/zyxel_
+# Example: zyxel_ptm0 -> /usr/local/munin/plugins/zyxel_
+#
+# The modem needs to have TELNET enabled (not SSH). I'm aware
+# that telnet is not secure as the password go over the line
+# in the clear, but on the other hand, if you configure your
+# modem with http (as this modem does), the password goes in
+# the clear anyway.
+#
+# Which username/password? The same one as you use when you
+# login into the website. By default, this is admin/1234
+# I hope you changed that!
+#
+# How to configure the username and password? Use munin's
+# configuration method: create a file in /etc/munin/plugin-conf.d
+# (for example: local-zyxel) and put the following contents
+# in that file:
+#
+# ----8<---cut here----8<-----
+# [zyxel_*]
+# env.modem_username admin
+# env.modem_password 1234
+# env.modem_hostname 192.168.1.254
+# ----8<---cut here----8<-----
+#
+# Obviously, fill in the values for the password and hostname
+# (I've used the defaults).
+#
+# This munin plugin expects two scripts in /usr/local/sbin:
+# 1) /usr/local/sbin/zyxel_if_acct.sh: an except script, uses
+#    telnet to get the accounting info on the interfaces. Used
+#    for the interfaces.
+# 2) /usr/local/sbin/zyxel_diagnostics.py: a python script,
+#    used to simulate a browser to get the DSL Line Speed
+#    information.
+
+IF_ACCT=/usr/local/sbin/zyxel_if_acct.sh
+DIAGNOSTICS=/usr/local/sbin/zyxel_diagnostics.py
+
+# You don't need to edit anything below this line
+
+INTERFACE=${0##*zyxel_}
+
+. $MUNIN_LIBDIR/plugins/plugin.sh
+
+if_stats()
+{
+	INTERFACE=$1
+	PPP=$($IF_ACCT $modem_hostname $modem_username $modem_password| grep "^ *${INTERFACE}:")
+	LINE=$(echo $PPP | sed -e 's/.*: *//')
+	IN=$(echo $LINE | cut -d ' ' -f 1)
+	OUT=$(echo $LINE | cut -d ' ' -f 9)
+	echo "in.value $IN"
+	echo "out.value $OUT"
+}
+
+vdsl_stats()
+{
+	$DIAGNOSTICS $modem_hostname $modem_username $modem_password | while read STATS; do
+		case $STATS in
+			*"current rate downstream"*)
+				VAL=$(echo $STATS | cut -d ' ' -f 4)
+				BPS=$(expr $VAL \* 1000)
+				echo "in.value $BPS"
+				;;
+			*"current rate upstream"*)
+				VAL=$(echo $STATS | cut -d ' ' -f 4)
+				BPS=$(expr $VAL \* 1000)
+				echo "out.value $BPS"
+				;;
+			*"attainable rate downstream"*)
+				VAL=$(echo $STATS | cut -d ' ' -f 4)
+				BPS=$(expr $VAL \* 1000)
+				echo "in_att.value $BPS"
+				;;
+			*"attainable rate upstream"*)
+				VAL=$(echo $STATS | cut -d ' ' -f 4)
+				BPS=$(expr $VAL \* 1000)
+				echo "out_att.value $BPS"
+				;;
+		esac
+	done
+}
+
+config()
+{
+	echo "graph_args --base 1000"
+	echo "graph_vlabel bits in (-) / out (+) per ${graph_period}"
+	echo "graph_category network"
+	echo "in.label received"
+	echo "in.graph no"
+	echo "in.min 0"
+	echo "out.min 0"
+	echo "out.negative in"
+	case "$INTERFACE" in
+		vdsl)
+			echo "graph_order in out in_att out_att"
+			echo "graph_title ZyXEL VDSL speed"
+			echo "in.type GAUGE"
+			echo "out.type GAUGE"
+			echo "in_att.graph no"
+			echo "in_att.type GAUGE"
+			echo "out_att.label attainable"
+			echo "out_att.type GAUGE"
+			echo "out_att.negative in_att"
+			echo "out.label trained"
+			;;
+		*)
+			echo "graph_order in out"
+			echo "graph_title ZyXEL Traffic on $INTERFACE"
+			echo "in.type DERIVE"
+			echo "in.cdef in,8,*"
+			echo "out.type DERIVE"
+			echo "out.cdef out,8,*"
+			echo "out.label bps"
+		;;
+	esac
+	print_warning in
+	print_warning out
+	print_critical in
+	print_critical out
+}
+
+case "$1" in
+	config)
+		config
+		exit 0
+		;;
+	autoconf)
+		echo yes
+		exit 0
+		;;
+	other)
+		set
+		exit 0
+		;;
+esac
+
+case "$INTERFACE" in
+	vdsl)
+		vdsl_stats
+		;;
+	*)
+		if_stats $INTERFACE
+		;;
+esac

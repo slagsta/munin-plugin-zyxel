@@ -1,0 +1,58 @@
+Graph bandwidth usage and line speed of ZyXEL P-2812HNU modems.
+
+For Licensing, see LICENSE file.
+
+==============================================================
+Usage:
+- Copy the 'zyxel_' file to /usr/local/munin/plugins.
+- Copy the files from the 'sbin' directory to /usr/local/sbin.
+- Make symlinks to specific interfaces you want to graph
+Examples: 
+  /etc/munin/plugins/zyxel_br0 -> /usr/local/munin/plugins/zyxel_
+  /etc/munin/plugins/zyxel_ptm0 -> /usr/local/munin/plugins/zyxel_
+  /etc/munin/plugins/zyxel_vdsl -> /usr/local/munin/plugins/zyxel_
+
+The modem needs to have TELNET enabled (not SSH). I'm aware
+that telnet is not secure as the password go over the line
+in the clear, but on the other hand, if you configure your
+modem with http (as this modem does), the password goes in
+the clear anyway.
+
+Which username/password? The same one as you use when you
+login into the website. By default, this is admin/1234
+I hope you changed that!
+
+How to configure the username and password? Use munin's
+configuration method: create a file in /etc/munin/plugin-conf.d
+(for example: local-zyxel) and put the following contents
+in that file:
+
+----8<---cut here----8<-----
+[zyxel_*]
+env.modem_username admin
+env.modem_password 1234
+env.modem_hostname 192.168.1.254
+----8<---cut here----8<-----
+
+Obviously, fill in the values for the password and hostname
+(I've used the defaults).
+
+The reload the munin-node service (service munin-node restart).
+You can test if the script gives output by issuing the following
+commands:
+
+  munin-run zyxel_ptm0
+  munin-run zyxel_vdsl
+
+(Of course, run only for the symlinks that you created).
+
+This munin plugin expects two scripts in /usr/local/sbin:
+1) /usr/local/sbin/zyxel_if_acct.sh: an except script, uses
+   telnet to get the accounting info on the interfaces. Used
+   for the interfaces.
+2) /usr/local/sbin/zyxel_diagnostics.py: a python script,
+   used to simulate a browser to get the DSL Line Speed
+   information.
+
+If you do not like to put the scripts in /usr/local/sbin,
+edit the variables in the zyxel_ munin script.
