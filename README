@@ -43,6 +43,8 @@ commands:
 
   munin-run zyxel_ptm0
   munin-run zyxel_vdsl
+  munin-run zyxel_lan
+  munin-run zyxel_nat
 
 (Of course, run only for the symlinks that you created).
 
@@ -50,9 +52,8 @@ This munin plugin expects two scripts in /usr/local/sbin:
 1) /usr/local/sbin/zyxel_if_acct.sh: an except script, uses
    telnet to get the accounting info on the interfaces. Used
    for the interfaces.
-2) /usr/local/sbin/zyxel_diagnostics.py: a python script,
-   used to simulate a browser to get the DSL Line Speed
-   information.
+2) /usr/local/sbin/zyxel_web.py: a python script, used to simulate
+   a browser to get the information from the web server of the modem.
 
 If you do not like to put the scripts in /usr/local/sbin,
 edit the variables in the zyxel_ munin script.
