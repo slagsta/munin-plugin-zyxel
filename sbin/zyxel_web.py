@@ -66,6 +66,15 @@ class Zyxel():
 		p = PyQuery(r.text)
 		print p("div.infodisplay > textarea").text()
 
+	def system(self):
+		r = self.s.post(self.url + "status.cgi")
+
+		# get the textarea with the info
+		p = PyQuery(r.text)
+		td1 = p("table.table_frame tr td.table_font").filter(lambda i: 'CPU Usage:' in PyQuery(this).text())
+		print 'cpu', td1.siblings()[1].text.rstrip("%")
+		td2 = p("table.table_frame tr td.table_font").filter(lambda i: 'Memory Usage:' in PyQuery(this).text())
+		print 'mem', td2.siblings()[1].text.rstrip("%")
 
 if __name__ == "__main__":
 	if len(sys.argv) < 5:
@@ -81,3 +90,5 @@ if __name__ == "__main__":
 		z.diagnostics()
 	elif cmd == "lan":
 		z.lan()
+	elif cmd == "system":
+		z.system()
