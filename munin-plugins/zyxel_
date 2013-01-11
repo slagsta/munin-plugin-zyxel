@@ -140,6 +140,7 @@ config()
 			print_critical out
 			;;
 		nat)
+			echo "graph_args -l 0"
 			echo "graph_vlabel sessions"
 			echo "graph_category network"
 			echo "graph_title Zyxel NAT sessions"
