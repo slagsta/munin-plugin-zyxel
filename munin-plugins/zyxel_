@@ -37,12 +37,12 @@
 # 1) /usr/local/sbin/zyxel_if_acct.sh: an except script, uses
 #    telnet to get the accounting info on the interfaces. Used
 #    for the interfaces.
-# 2) /usr/local/sbin/zyxel_diagnostics.py: a python script,
-#    used to simulate a browser to get the DSL Line Speed
-#    information.
+# 2) /usr/local/sbin/zyxel_web: a python script,
+#    used to simulate a browser to get information from the
+#    web server of the modem.
 
 IF_ACCT=/usr/local/sbin/zyxel_if_acct.sh
-DIAGNOSTICS=/usr/local/sbin/zyxel_diagnostics.py
+ZYX_WEB=/usr/local/sbin/zyxel_web.py
 
 # You don't need to edit anything below this line
 
@@ -63,7 +63,7 @@ if_stats()
 
 vdsl_stats()
 {
-	$DIAGNOSTICS $modem_hostname $modem_username $modem_password | while read STATS; do
+	$ZYX_WEB $modem_hostname $modem_username $modem_password diagnostics | while read STATS; do
 		case $STATS in
 			*"current rate downstream"*)
 				VAL=$(echo $STATS | cut -d ' ' -f 4)
@@ -89,18 +89,40 @@ vdsl_stats()
 	done
 }
 
+nat_stats()
+{
+	$ZYX_WEB $modem_hostname $modem_username $modem_password nat | while read STATS; do
+		HOST=$(echo $STATS | awk '{ print $1 }')
+		SESSIONS=$(echo $STATS | awk '{ print $4 }')
+		echo "$HOST.value $SESSIONS"
+	done
+}
+
+lan_stats()
+{
+	$ZYX_WEB $modem_hostname $modem_username $modem_password lan
+}
+
+
+nat_hosts()
+{
+	$ZYX_WEB $modem_hostname $modem_username $modem_password nat | awk '{ print $1 }'
+}	
+
+
 config()
 {
-	echo "graph_args --base 1000"
-	echo "graph_vlabel bits in (-) / out (+) per ${graph_period}"
-	echo "graph_category network"
-	echo "in.label received"
-	echo "in.graph no"
-	echo "in.min 0"
-	echo "out.min 0"
-	echo "out.negative in"
 	case "$INTERFACE" in
 		vdsl)
+			echo "graph_args --base 1000"
+			echo "graph_vlabel bits in (-) / out (+) per ${graph_period}"
+			echo "graph_category network"
+			echo "in.label received"
+			echo "in.graph no"
+			echo "in.min 0"
+			echo "out.min 0"
+			echo "out.negative in"
+
 			echo "graph_order in out in_att out_att"
 			echo "graph_title ZyXEL VDSL speed"
 			echo "in.type GAUGE"
@@ -111,8 +133,57 @@ config()
 			echo "out_att.type GAUGE"
 			echo "out_att.negative in_att"
 			echo "out.label trained"
+
+			print_warning in
+			print_warning out
+			print_critical in
+			print_critical out
+			;;
+		nat)
+			echo "graph_vlabel sessions"
+			echo "graph_category network"
+			echo "graph_title Zyxel NAT sessions"
+			
+			for HOST in $(nat_hosts); do
+				echo "$HOST.min 0"
+				echo "$HOST.label $HOST"
+				echo "$HOST.type GAUGE"
+				echo "$HOST.draw AREASTACK"
+			done
+			;;
+		lan)
+			echo "graph_args --base 1000"
+			echo "graph_vlabel bits in (-) / out (+) per ${graph_period}"
+			echo "graph_category network"
+			echo "graph_title ZyXEL Traffic on LAN"
+
+			ORDER=""
+			for IFACE in LAN1 LAN2 LAN3 LAN4 Wireless; do
+				echo "${IFACE}in.graph no"
+				echo "${IFACE}in.min 0"
+				echo "${IFACE}out.graph AREASTACK"
+				echo "${IFACE}out.min 0"
+				echo "${IFACE}out.negative ${IFACE}in"
+				echo "${IFACE}in.type DERIVE"
+				echo "${IFACE}in.cdef ${IFACE}in,8,*"
+				echo "${IFACE}out.type DERIVE"
+				echo "${IFACE}out.cdef ${IFACE}out,8,*"
+				echo "${IFACE}out.label ${IFACE} bps"
+				ORDER="$ORDER ${IFACE}in ${IFACE}out"
+			done
+
+			echo "graph_order $ORDER"
 			;;
 		*)
+			echo "graph_args --base 1000"
+			echo "graph_vlabel bits in (-) / out (+) per ${graph_period}"
+			echo "graph_category network"
+			echo "in.label received"
+			echo "in.graph no"
+			echo "in.min 0"
+			echo "out.min 0"
+			echo "out.negative in"
+
 			echo "graph_order in out"
 			echo "graph_title ZyXEL Traffic on $INTERFACE"
 			echo "in.type DERIVE"
@@ -120,12 +191,13 @@ config()
 			echo "out.type DERIVE"
 			echo "out.cdef out,8,*"
 			echo "out.label bps"
+
+			print_warning in
+			print_warning out
+			print_critical in
+			print_critical out
 		;;
 	esac
-	print_warning in
-	print_warning out
-	print_critical in
-	print_critical out
 }
 
 case "$1" in
@@ -146,6 +218,12 @@ esac
 case "$INTERFACE" in
 	vdsl)
 		vdsl_stats
+		;;
+	nat)
+		nat_stats
+		;;
+	lan)
+		lan_stats
 		;;
 	*)
 		if_stats $INTERFACE
