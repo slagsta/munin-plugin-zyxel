@@ -53,12 +53,13 @@ INTERFACE=${0##*zyxel_}
 if_stats()
 {
 	INTERFACE=$1
-	PPP=$($IF_ACCT $modem_hostname $modem_username $modem_password| grep "^ *${INTERFACE}:")
-	LINE=$(echo $PPP | sed -e 's/.*: *//')
-	IN=$(echo $LINE | cut -d ' ' -f 1)
-	OUT=$(echo $LINE | cut -d ' ' -f 9)
-	echo "in.value $IN"
-	echo "out.value $OUT"
+	$IF_ACCT $modem_hostname $modem_username $modem_password |
+		grep "^ *${INTERFACE}:" |
+		sed -e 's/.*: *//' |
+		while read IN d2 d3 d4 d5 d6 d7 d8 OUT rest; do
+			echo "in.value $IN"
+			echo "out.value $OUT"
+		done
 }
 
 vdsl_stats()
