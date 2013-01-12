@@ -153,6 +153,7 @@ config()
 			echo "graph_vlabel sessions"
 			echo "graph_category network"
 			echo "graph_title ZyXEL NAT sessions"
+			echo "graph_total Total"
 			
 			for HOST in $(nat_hosts); do
 				echo "$HOST.min 0"
