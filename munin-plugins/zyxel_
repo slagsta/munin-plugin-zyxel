@@ -91,9 +91,8 @@ vdsl_stats()
 
 nat_stats()
 {
-	$ZYX_WEB $modem_hostname $modem_username $modem_password nat | while read STATS; do
-		HOST=$(echo $STATS | awk '{ print $1 }')
-		SESSIONS=$(echo $STATS | awk '{ print $4 }')
+	$ZYX_WEB $modem_hostname $modem_username $modem_password nat |
+	while read HOST IP MAC SESSIONS REST; do
 		echo "$HOST.value $SESSIONS"
 	done
 }
@@ -106,16 +105,18 @@ lan_stats()
 
 nat_hosts()
 {
-	$ZYX_WEB $modem_hostname $modem_username $modem_password nat | awk '{ print $1 }'
+	$ZYX_WEB $modem_hostname $modem_username $modem_password nat |
+	while read HOST REST; do
+		echo $HOST
+	done
 }	
 
 system_stats()
 {
-	$ZYX_WEB $modem_hostname $modem_username $modem_password system | while read STATS; do
-		type=$(echo $STATS | awk '{ print $1 }')
-		value=$(echo $STATS | awk '{ print $2 }')
-		echo "multigraph zyxel_${type}"
-		echo "${type}.value ${value}"
+	$ZYX_WEB $modem_hostname $modem_username $modem_password system |
+	while read TYPE VALUE REST; do
+		echo "multigraph zyxel_${TYPE}"
+		echo "${TYPE}.value ${VALUE}"
 	done
 }
 
