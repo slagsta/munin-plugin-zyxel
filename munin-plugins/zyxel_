@@ -139,6 +139,7 @@ config()
 			echo "in.type GAUGE"
 			echo "out.type GAUGE"
 			echo "in_att.graph no"
+			echo "in_att.label no"
 			echo "in_att.type GAUGE"
 			echo "out_att.label attainable"
 			echo "out_att.type GAUGE"
@@ -193,6 +194,7 @@ config()
 			ORDER=""
 			for IFACE in LAN1 LAN2 LAN3 LAN4 Wireless; do
 				echo "${IFACE}in.graph no"
+				echo "${IFACE}in.label no"
 				echo "${IFACE}in.min 0"
 				echo "${IFACE}out.min 0"
 				echo "${IFACE}out.negative ${IFACE}in"
