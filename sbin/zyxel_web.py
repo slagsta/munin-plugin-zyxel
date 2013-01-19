@@ -16,6 +16,22 @@ def strip_hr(text):
 
 	return text.strip()
 
+def timestr_to_seconds(text):
+	"""Format is 'x min' or 'y hour:x min'"""
+	from datetime import timedelta
+	d = timedelta()
+	for t in text.split(':'):
+		t = t.strip()
+		val, units = t.split(' ', 1)
+		if 'hour' in units:
+			d += timedelta(hours=int(val))
+		if 'min' in units:
+			d += timedelta(minutes=int(val))
+		if 'day' in units:
+			d += timedelta(days=int(val))
+
+	return d.total_seconds()
+
 class Zyxel():
 	def __init__(self, hostname, username, password):
 		self.url = "http://" + hostname + "/"
@@ -69,12 +85,15 @@ class Zyxel():
 	def system(self):
 		r = self.s.post(self.url + "status.cgi")
 
-		# get the textarea with the info
 		p = PyQuery(r.text)
-		td1 = p("table.table_frame tr td.table_font").filter(lambda i: 'CPU Usage:' in PyQuery(this).text())
-		print 'cpu', td1.siblings()[1].text.rstrip("%")
-		td2 = p("table.table_frame tr td.table_font").filter(lambda i: 'Memory Usage:' in PyQuery(this).text())
-		print 'mem', td2.siblings()[1].text.rstrip("%")
+		td = p("table.table_frame tr td.table_font").filter(lambda i: 'CPU Usage:' in PyQuery(this).text())
+		print 'cpu', td.siblings()[1].text.rstrip("%")
+		td = p("table.table_frame tr td.table_font").filter(lambda i: 'Memory Usage:' in PyQuery(this).text())
+		print 'mem', td.siblings()[1].text.rstrip("%")
+		td = p("table.table_frame tr td.table_font").filter(lambda i: 'DSL Up Time:' in PyQuery(this).text())
+		print 'dsl_uptime', timestr_to_seconds(td.siblings()[0].text) / 86400.0
+		td = p("table.table_frame tr td.table_font").filter(lambda i: 'System Up Time:' in PyQuery(this).text())
+		print 'sys_uptime', timestr_to_seconds(td.siblings()[0].text) / 86400.0
 
 if __name__ == "__main__":
 	if len(sys.argv) < 5:
