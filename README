@@ -12,6 +12,8 @@ Examples:
   /etc/munin/plugins/zyxel_ptm0 -> /usr/local/munin/plugins/zyxel_
   /etc/munin/plugins/zyxel_vdsl -> /usr/local/munin/plugins/zyxel_
 
+Tested on ZyXEL P-2812HNU-F1.
+
 The modem needs to have TELNET enabled (not SSH). I'm aware
 that telnet is not secure as the password go over the line
 in the clear, but on the other hand, if you configure your
