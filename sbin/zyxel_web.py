@@ -3,6 +3,7 @@
 import requests
 from pyquery import PyQuery
 import sys
+import re
 
 def strip_hr(text):
 	"""Strip human readable string from number of bytes. Expecting text in
@@ -20,7 +21,7 @@ def timestr_to_seconds(text):
 	"""Format is 'x min' or 'y hour:x min'"""
 	from datetime import timedelta
 	d = timedelta()
-	for t in text.split(':'):
+	for t in re.split('[:,]', text):
 		t = t.strip()
 		val, units = t.split(' ', 1)
 		if 'hour' in units:
