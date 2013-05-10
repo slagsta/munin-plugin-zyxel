@@ -174,6 +174,8 @@ config()
 			echo "cpu.type GAUGE"
 			echo "cpu.draw AREA"
 			echo "cpu.label CPU%"
+			echo "cpu.warning 50"
+			echo "cpu.critical 90"
 
 			echo "multigraph zyxel_mem"
 			echo "graph_args -l 0 -u 100"
@@ -183,6 +185,8 @@ config()
 			echo "mem.type GAUGE"
 			echo "mem.draw AREA"
 			echo "mem.label Memory%"
+			echo "mem.warning 80"
+			echo "mem.critical 90"
 
 			cat <<'EOF'
 multigraph zyxel_sys_uptime
