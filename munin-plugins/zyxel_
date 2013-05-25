@@ -174,8 +174,8 @@ config()
 			echo "cpu.type GAUGE"
 			echo "cpu.draw AREA"
 			echo "cpu.label CPU%"
-			echo "cpu.warning 50"
-			echo "cpu.critical 90"
+			echo "cpu.warning 80"
+			echo "cpu.critical 95"
 
 			echo "multigraph zyxel_mem"
 			echo "graph_args -l 0 -u 100"
